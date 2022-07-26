@@ -1,0 +1,364 @@
+from time import sleep
+
+from PyQt5 import uic, QtWidgets
+import psycopg2
+import sys
+import datetime
+
+nome = ""
+
+def login():
+    tela_login.lbErro.setText("")
+    nome_usuario = tela_login.lbLogin.text()
+    senha = tela_login.lbSenha.text()
+    banco = "host='localhost' dbname='timesheet' user='utilizar seu user aqui' password='utilizar sua senha aqui'"
+    global nome
+
+    try:
+        conn = psycopg2.connect(banco)
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT senha,nome FROM login_timesheet WHERE login = '{nome_usuario}'")
+        senha_bd = cursor.fetchall()
+        nome = senha_bd[0][1]
+        if nome_usuario == "admin" and senha == senha_bd[0][0]:
+            tela_login.close()
+            sleep(0.3)
+            tela_admin.show()
+        if nome_usuario != "admin" and senha == senha_bd[0][0]:
+            tela_login.close()
+            sleep(0.3)
+            tela_selecao.show()
+        else:
+            tela_login.lbErro.setText("Dados de login não autenticados!")
+
+    except:
+        tela_login.lbErro.setText("Dados de login não autenticados!")
+
+
+def cadastrar_colaborador():
+    nome = tela_cadastro_colaborador.lbNome.text()
+    login = tela_cadastro_colaborador.lbLogin.text()
+    senha = tela_cadastro_colaborador.lbSenha.text()
+    r_senha = tela_cadastro_colaborador.lbRsenha.text()
+    tela_cadastro_colaborador.label.setText("")
+
+    if senha == r_senha:
+        try:
+            banco = "host='localhost' dbname='timesheet' user='utilizar seu user aqui' password='utilizar sua senha aqui'"
+            conn = psycopg2.connect(banco)
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO login_timesheet(nome,login,senha,r_senha) VALUES ('"+nome+"', '"+login+"', '"+senha+"','"+r_senha+"')")
+            conn.commit()
+            conn.close()
+            tela_cadastro_colaborador.label.setText("Usuario cadastrado com sucesso!")
+            sleep(0.3)
+            tela_cadastro_colaborador.close()
+            tela_cadastro_colaborador.lbId.setText("")
+            tela_cadastro_colaborador.lbNome.setText("")
+            tela_cadastro_colaborador.lbLogin.setText("")
+            tela_cadastro_colaborador.lbSenha.setText("")
+            tela_cadastro_colaborador.lbRsenha.setText("")
+            tela_cadastro_colaborador.label.setText("")
+            tela_admin.show()
+
+        except psycopg2.Error as erro:
+            print("Erro ao inserir os dados: ", erro)
+    else:
+        tela_cadastro_colaborador.label.setText("As senhas digitadas estão diferentes")
+
+
+def registrar_dados():
+    nome_cliente = tela_projeto.lbNcliente.text()
+    nome_projeto = tela_projeto.lbProjeto_n.text()
+    num_projeto = tela_projeto.lbNproduto.text()
+    data_ini = tela_projeto.lbData.text()
+    hora_utilizada = tela_projeto.lbHorau.text()
+    descricao = tela_projeto.lbDescricao_n.text()
+    try:
+        banco = "host='localhost' dbname='timesheet' user='utilizar seu user aqui' password='utilizar sua senha aqui'"
+        conn = psycopg2.connect(banco)
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO colaborador_timesheet(nome_colaborador, nome_cliente, nome_projeto, "
+                       "num_projeto, data_ini, hora_utilizada, descricao) VALUES ('" + nome + "', '" + nome_cliente + "', '" + nome_projeto + "', '" + num_projeto + "', '" + data_ini + "', '" + hora_utilizada + "', '" + descricao + "')")
+        conn.commit()
+        conn.close()
+        tela_cadastro_cliente.label.setText("Usuario cadastrado com sucesso!")
+        sleep(0.3)
+        tela_projeto.close()
+        tela_projeto.lbNcliente.setText("")
+        tela_projeto.lbProjeto_n.setText("")
+        tela_projeto.lbNproduto.setText("")
+        tela_projeto.lbData.setText("")
+        tela_projeto.lbHorau.setText("")
+        tela_projeto.lbDescricao_n.setText("")
+        sleep(0.3)
+        tela_selecao.show()
+    except psycopg2.Error as erro:
+        print("Erro ao inserir os dados: ", erro)
+
+
+def logout():
+    tela_admin.close()
+    tela_projeto.close()
+    tela_cliente.close()
+    tela_selecao.close()
+    sleep(0.3)
+    tela_login.lbErro.setText("")
+    tela_login.lbLogin.setText("")
+    tela_login.lbSenha.setText("")
+    tela_login.show()
+
+
+def cadastro_colaborador():
+    tela_admin.close()
+    sleep(0.3)
+    tela_cadastro_colaborador.show()
+
+
+def abre_visual_db():
+    from datetime import datetime
+    tela_admin.close()
+    try:
+        banco = "host='localhost' dbname='timesheet' user='utilizar seu user aqui' password='utilizar sua senha aqui'"
+        conn = psycopg2.connect(banco)
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM colaborador_timesheet ORDER BY data_ini")
+        dados = cursor.fetchall()
+        conn.commit()
+        conn.close()
+        sleep(0.3)
+        tela_visual_db.show()
+    except psycopg2.Error as erro:
+        print("Erro ao carregar dados: ", erro)
+    for i in range(0, len(dados)):
+        date_banco = str(dados[i][5])
+        date_form = datetime.strptime(date_banco, "%Y-%m-%d").strftime('%d-%m-%Y')
+        tela_visual_db.textBrowser.append(dados[i][1] + " | " + dados[i][2] + " | " + dados[i][3] + " | " + dados[i][4]
+                                          + " | " + date_form + " | " + dados[i][6] + " | " + dados[i][7])
+
+
+def registro_atividade():
+    tela_selecao.close()
+    sleep(0.3)
+    tela_projeto.show()
+
+
+def abre_projeto():
+    tela_cliente.close()
+    sleep(0.3)
+    tela_projeto.show()
+
+
+def nova_atividade():
+    tela_selecao.close()
+    tela_visual.close()
+    sleep(0.3)
+    tela_projeto.show()
+
+
+def visualizar_atividade():
+    from datetime import datetime
+    tela_selecao.close()
+    try:
+        banco = "host='localhost' dbname='timesheet' user='utilizar seu user aqui' password='utilizar sua senha aqui'"
+        conn = psycopg2.connect(banco)
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT * FROM colaborador_timesheet WHERE nome_colaborador = '{nome}' ORDER BY data_ini")
+        dados = cursor.fetchall()
+        conn.commit()
+        conn.close()
+        sleep(0.3)
+        tela_visual.show()
+    except psycopg2.Error as erro:
+        print("Erro ao carregar dados: ", erro)
+    for i in range(0, len(dados)):
+        date_banco = str(dados[i][5])
+        date_form = datetime.strptime(date_banco, "%Y-%m-%d").strftime('%d-%m-%Y')
+        tela_visual.textBrowser.append(dados[i][1] + " | " + dados[i][2] + " | " + dados[i][3] + " | " + dados[i][4]
+            + " | " + date_form + " | " + dados[i][6] + " | " + dados[i][7])
+
+
+def cliente_voltar():
+    tela_visual.close()
+    sleep(0.3)
+    tela_selecao.show()
+
+
+
+def cancelar_registro():
+    tela_projeto.close()
+    sleep(0.3)
+    tela_selecao.show()
+
+
+def colaborador_voltar():
+    tela_cadastro_colaborador.close()
+    sleep(0.3)
+    tela_admin.show()
+
+
+def projeto_voltar():
+    tela_cadastro_cliente.close()
+    sleep(0.3)
+    tela_admin.show()
+
+
+def visual_db_voltar():
+    tela_visual_db.close()
+    sleep(0.3)
+    tela_admin.show()
+
+
+def editar_registro():
+    tela_visual.close()
+    sleep(0.3)
+    tela_editar.show()
+
+
+def editando_registro():
+    tela_editar.close()
+    sleep(0.3)
+    tela_aviso_editar.show()
+
+
+def cancelar_edicao():
+    tela_editar.close()
+    sleep(0.3)
+    tela_visual.show()
+
+
+def confirmar_edicao():
+    tela_aviso_editar.close()
+    sleep(0.3)
+    tela_aviso_editar_ok.show()
+
+
+def cancelando_edicao():
+    tela_aviso_editar.close()
+    sleep(0.3)
+    tela_editar.show()
+
+
+def edicao_ok():
+    tela_aviso_editar_ok.close()
+    sleep(0.3)
+    tela_visual.show()
+
+
+def excluir_registro():
+    tela_visual.close()
+    sleep(0.3)
+    tela_excluir.show()
+
+
+def excluindo_registro():
+    tela_excluir.close()
+    sleep(0.3)
+    tela_aviso_excluir.show()
+
+
+def cancelar_exclusao():
+    tela_excluir.close()
+    sleep(0.3)
+    tela_visual.show()
+
+
+def confirmar_exclusao():
+    tela_aviso_excluir.close()
+    sleep(0.3)
+    tela_aviso_excluir_ok.show()
+
+
+def cancelando_exclusao():
+    tela_aviso_excluir.close()
+    sleep(0.3)
+    tela_excluir.show()
+
+
+def exclusao_ok():
+    tela_aviso_excluir_ok.close()
+    sleep(0.3)
+    tela_visual.show()
+
+
+app = QtWidgets.QApplication([])
+tela_login = uic.loadUi(r"UI\tela_login.ui")
+tela_admin = uic.loadUi(r"UI\tela_admin.ui")
+tela_cadastro_colaborador = uic.loadUi(r"UI\tela_cadastro_colaborador.ui")
+tela_cadastro_cliente = uic.loadUi(r"UI\tela_cadastro_cliente.ui")
+tela_selecao = uic.loadUi(r"UI\tela_selecao.ui")
+tela_visual = uic.loadUi(r"UI\tela_visual.ui")
+tela_visual_db = uic.loadUi(r"UI\tela_visual_db.ui")
+tela_editar = uic.loadUi(r"UI\tela_editar.ui")
+tela_aviso_editar = uic.loadUi(r"UI\tela_aviso_editar.ui")
+tela_aviso_editar_ok = uic.loadUi(r"UI\tela_aviso_editar_ok.ui")
+tela_excluir = uic.loadUi(r"UI\tela_excluir.ui")
+tela_aviso_excluir = uic.loadUi(r"UI\tela_aviso_excluir.ui")
+tela_aviso_excluir_ok = uic.loadUi(r"UI\tela_aviso_excluir_ok.ui")
+tela_cliente = uic.loadUi(r"UI\tela_cliente.ui")
+tela_projeto = uic.loadUi(r"UI\tela_projeto.ui")
+
+# tela_login efeito dos botões
+tela_login.btEntrar.clicked.connect(login)
+tela_login.lbSenha.setEchoMode(QtWidgets.QLineEdit.Password)
+
+# tela_admin efeito dos botões
+tela_admin.btNcadastro.clicked.connect(cadastro_colaborador)
+#tela_admin.btNcliente.clicked.connect(cadastro_cliente)
+tela_admin.btVbanco.clicked.connect(abre_visual_db)
+
+#tela_admin.btCdados.clicked.connect()
+tela_admin.btSair.clicked.connect(logout)
+
+# tela_cadastro_colaborador efeito dos botões
+tela_cadastro_colaborador.btCadastro.clicked.connect(cadastrar_colaborador)
+tela_cadastro_colaborador.btVoltar.clicked.connect(colaborador_voltar)
+
+# tela_cadastro_cliente efeito dos botões
+#tela_cadastro_cliente.btCadastro.clicked.connect(cliente_cadastro)
+#tela_cadastro_cliente.btVoltar.clicked.connect(projeto_voltar)
+
+# tela_selecao efeito dos botões
+tela_selecao.btRegistro.clicked.connect(nova_atividade)
+tela_selecao.btVisual.clicked.connect(visualizar_atividade)
+tela_selecao.btSair.clicked.connect(logout)
+
+# tela_visual efeito dos botões
+tela_visual.btCadastrar.clicked.connect(nova_atividade)
+#tela_visual.btEditar.clicked.connect(editar_registro)
+#tela_visual.btExcluir.clicked.connect(excluir_registro)
+tela_visual.btVoltar.clicked.connect(cliente_voltar)
+
+# tela_editar efeito dos botões
+tela_editar.btConfirmar.clicked.connect(editando_registro)
+tela_editar.btCancelar.clicked.connect(cancelar_edicao)
+
+# tela_aviso_editar efeito dos botões
+tela_aviso_editar.btConfirmar.clicked.connect(confirmar_edicao)
+tela_aviso_editar.btCancelar.clicked.connect(cancelando_edicao)
+
+# tela_aviso_editar_ok
+tela_aviso_editar_ok.btOk.clicked.connect(edicao_ok)
+
+# tela_excluir efeito dos botões
+tela_excluir.btExcluir.clicked.connect(excluindo_registro)
+tela_excluir.btCancelar.clicked.connect(cancelar_exclusao)
+
+# tela_aviso_excluir efeito dos botões
+tela_aviso_excluir.btConfirmar.clicked.connect(confirmar_exclusao)
+tela_aviso_excluir.btCancelar.clicked.connect(cancelando_exclusao)
+
+# tela_aviso_excluir_ok
+tela_aviso_excluir_ok.btOk.clicked.connect(exclusao_ok)
+
+# tela_visual_db efeito dos botões
+#tela_visual_db.btEditar.clicked.connect(editar_projeto)
+#tela_visual_db.btExcluir.clicked.connect(excluir_projeto)
+tela_visual_db.btVoltar.clicked.connect(visual_db_voltar)
+
+# tela_projeto efeito dos botôes
+tela_projeto.btRegistrar.clicked.connect(registrar_dados)
+tela_projeto.btCancelar.clicked.connect(cancelar_registro)
+
+tela_login.show()
+app.exec()
